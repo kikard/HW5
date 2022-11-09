@@ -1,0 +1,404 @@
+<!--
+    Modified from https://github.com/end3r/Gamedev-Canvas-workshop
+    NAME: Kahtryn Ikard
+    CLASS: CPSC 332
+    Notes: Toggle pause does not work 
+            Speed range is not implemented
+            Reset is does not work
+            Continue is not implemented
+            High score is not implemented
+-->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>HW5 Breakout Game</title>
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+        }
+
+        canvas {
+            background: #eee;
+            display: block;
+            margin: 0 auto;
+        }
+
+        #start-menu {
+            position: absolute;
+        }
+
+        #options-menu{
+            display: flex; 
+            flex-direction: column;
+            width: 200px;
+            border: 2px dashed purple;
+            margin: auto;
+            padding: 5px;
+        }
+
+    </style>
+
+    <script>
+        // var color1 = "#0095DD";
+        var color1 = "#6fcf0e";
+
+        window.onload = function () {
+            var canvas = document.getElementById("myCanvas");
+            var ctx = canvas.getContext("2d");
+            var ballRadius = 10;
+            var x = canvas.width / 2;
+            var y = canvas.height - 30;
+            var dx = 2;
+            var dy = -2;
+            var paddleHeight = 10;
+            var paddleWidth = 75;
+            var paddleX = (canvas.width - paddleWidth) / 2;
+            var rightPressed = false;
+            var leftPressed = false;
+            var brickRowCount = 5;
+            var brickColumnCount = 3;
+            var brickWidth = 75;
+            var brickHeight = 20;
+            var brickPadding = 10;
+            var brickOffsetTop = 30;
+            var brickOffsetLeft = 30;
+            var score = 0;
+            var lives = 3;
+
+            var bricks = [];
+
+            for (var c = 0; c < brickColumnCount; c++) {
+                bricks[c] = [];
+                for (var r = 0; r < brickRowCount; r++) {
+                    bricks[c][r] = { x: 0, y: 0, status: 1 };
+                }
+            }
+
+            document.addEventListener("keydown", keyDownHandler, false);
+            document.addEventListener("keyup", keyUpHandler, false);
+            document.addEventListener("mousemove", mouseMoveHandler, false);
+
+            function keyDownHandler(e) {
+                if (e.keyCode == 39) {
+                    rightPressed = true;
+                }
+                else if (e.keyCode == 37) {
+                    leftPressed = true;
+                }
+            }
+
+            function keyUpHandler(e) {
+                if (e.keyCode == 39) {
+                    rightPressed = false;
+                }
+                else if (e.keyCode == 37) {
+                    leftPressed = false;
+                }
+            }
+
+            function mouseMoveHandler(e) {
+                var relativeX = e.clientX - canvas.offsetLeft;
+                if (relativeX > 0 && relativeX < canvas.width) {
+                    paddleX = relativeX - paddleWidth / 2;
+                }
+            }
+
+            function collisionDetection() {
+                for (var c = 0; c < brickColumnCount; c++) {
+                    for (var r = 0; r < brickRowCount; r++) {
+                        var b = bricks[c][r];
+                        if (b.status == 1) {
+                            if (x > b.x && x < b.x + brickWidth && y > b.y && y < b.y + brickHeight) {
+                                dy = -dy;
+                                b.status = 0;
+                                score++;
+                                if (score == brickRowCount * brickColumnCount) {
+                                    //TODO: draw message on the canvas
+                                    alert("YOU WIN, CONGRATS!");
+                                    //TODO: pause game instead of reloading
+                                    document.location.reload();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            function drawBall() {
+                ctx.beginPath();
+                ctx.arc(x, y, ballRadius, 0, Math.PI * 2);
+                ctx.fillStyle = color1;
+                ctx.fill();
+                ctx.closePath();
+            }
+
+            function drawPaddle() {
+                ctx.beginPath();
+                ctx.rect(paddleX, canvas.height - paddleHeight, paddleWidth, paddleHeight);
+                ctx.fillStyle = color1;
+                ctx.fill();
+                ctx.closePath();
+            }
+
+            function drawBricks() {
+                for (var c = 0; c < brickColumnCount; c++) {
+                    for (var r = 0; r < brickRowCount; r++) {
+                        if (bricks[c][r].status == 1) {
+                            var brickX = (r * (brickWidth + brickPadding)) + brickOffsetLeft;
+                            var brickY = (c * (brickHeight + brickPadding)) + brickOffsetTop;
+                            bricks[c][r].x = brickX;
+                            bricks[c][r].y = brickY;
+                            ctx.beginPath();
+                            ctx.rect(brickX, brickY, brickWidth, brickHeight);
+                            ctx.fillStyle = color1;
+                            ctx.fill();
+                            ctx.closePath();
+                        }
+                    }
+                }
+            }
+            function drawScore() {
+                ctx.font = "16px Arial";
+                ctx.fillStyle = color1;
+                ctx.fillText("Score: " + score, 60, 20);
+            }
+
+            function drawLives() {
+                ctx.font = "16px Arial";
+                ctx.fillStyle = color1;
+                ctx.fillText("Lives: " + lives, canvas.width - 65, 20);
+            }
+
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawBricks();
+                drawBall();
+                drawPaddle();
+                drawScore();
+                drawHighScore();
+                drawLives();
+                collisionDetection();
+
+                if (x + dx > canvas.width - ballRadius || x + dx < ballRadius) {
+                    dx = -dx;
+                }
+                if (y + dy < ballRadius) {
+                    dy = -dy;
+                }
+                else if (y + dy > canvas.height - ballRadius) {
+                    if (x > paddleX && x < paddleX + paddleWidth) {
+                        dy = -dy;
+                    }
+                    else {
+                        lives--;
+                        if (lives <= 0) {
+                            //TODO: draw message on the canvas
+                            alert("GAME OVER");
+                            //TODO: pause game instead of reloading
+                            document.location.reload();
+                        }
+                        else {
+                            x = canvas.width / 2;
+                            y = canvas.height - 30;
+                            dx = 3;
+                            dy = -3;
+                            paddleX = (canvas.width - paddleWidth) / 2;
+                        }
+                    }
+                }
+
+                if (rightPressed && paddleX < canvas.width - paddleWidth) {
+                    paddleX += 7;
+                }
+                else if (leftPressed && paddleX > 0) {
+                    paddleX -= 7;
+                }
+
+                //TODO: adjust speed
+                x += dx;
+                y += dy;
+
+                //TODO: pause game check
+
+                requestAnimationFrame(draw);
+            }
+
+            /*
+                Additions to starter code
+            */
+
+            //Additional variables used to help make dimensions/locations easier to reuse            
+            //controls game speed            
+            //pause game variable            
+            //high score tracking variables
+            //other variables?            
+
+            //event listeners added
+            let pause_button = document.getElementById("pause-btn");
+            pause_button.addEventListener('click', togglePauseGame());
+            let reset_button = document.getElementById("reset-btn");
+            reset_button.addEventListener('click', startNewGame());
+
+            //game speed changes handler            
+            //pause game event handler            
+            //start a new game event handler            
+            //continue playing
+            //reload click event listener            
+
+            //Drawing a high score
+            function drawHighScore() {
+                ctx.clearRect(100, 30, 100, 30);
+                ctx.font = "16px Arial";
+                ctx.fillStyle = "orangered";
+                ctx.fillText(`High Score: `, 150, 20);
+                // ctx.fillText(`High Score: ${highScore}`);
+            }
+
+            //draw the menu screen, including labels and button
+            function drawMenu() {
+                ctx.clearRect(100, 50, 300, 200);
+                ctx.fillStyle = "orangered";
+                ctx.fillRect(100, 50, 300, 200);
+                ctx.font = "24px Arial";
+                ctx.fillStyle = "black";
+                ctx.fillText("Breakout Game!", 160, 100);
+
+                // button box
+                ctx.clearRect(170, 180, 160, 30);
+                ctx.fillStyle = "orange";
+                setShadow();
+                ctx.fillRect(170, 180, 160, 30);
+                ctx.font = "16px Arial";
+                ctx.fillStyle = "purple";
+                ctx.fillText("Start Game", 200, 200)
+
+                //event listener for clicking start
+                //need to add it here because the menu should be able to come back after 
+                //we remove the it later 
+                canvas.addEventListener('click', (e) => {
+                    let positionX = e.clientX - 170;
+                    let positionY = e.clientY - 180;
+                    if(positionX > 146 && positionX < 340 && positionY < 30 && positionY > 0){
+                        startGameClick(e);
+                        resetShadow();
+
+                    };
+                });
+            }
+
+            //function used to set shadow properties
+            function setShadow() {
+                ctx.shadowColor = "brown";
+                ctx.shadowBlur = 6;
+                ctx.shadowOffsetX = 6;
+                ctx.shadowOffsetY = 6;
+        
+            };
+
+            //function used to reset shadow properties to 'normal'
+            function resetShadow() {
+            };
+
+            //function to clear the menu when we want to start the game
+            function clearMenu() {
+                //remove event listener for menu, 
+                //we don't want to trigger the start game click event during a game 
+                canvas.removeEventListener('click', (e) => {
+                   let positionX = e.clientX - 170;
+                   let positionY = e.clientY - 180;
+                   if(positionX > 146 && positionX < 340 && positionY < 30 && positionY > 0){
+                       console.log("Removing button listener")
+                   };
+               });  
+                ctx.clearRect(100, 50, 300, 200);
+            }
+
+            //function to start the game
+            //this should check to see if the player clicked the button
+            //i.e., did the user click in the bounds of where the button is drawn
+            //if so, we want to trigger the draw(); function to start our game
+            function startGameClick(event) {
+                clearMenu();
+                draw();
+            };
+
+            //function to handle game speed adjustments when we move our slider
+            function adjustGameSpeed() {
+                //update the slider display                
+                //update the game speed multiplier                
+            };
+
+            //function to toggle the play/paused game state
+            function togglePauseGame() {
+                //toggle state                
+                //if we are not paused, we want to continue animating (hint: zyBook 8.9)
+                // save 
+                // draw pause menu with button that triggers ctx.restore()
+                ctx.save();
+
+                ctx.clearRect(170, 180, 160, 30);
+                ctx.fillStyle = "orange";
+                setShadow();
+                ctx.fillRect(170, 180, 160, 30);
+                ctx.font = "16px Arial";
+                ctx.fillStyle = "purple";
+                ctx.fillText("Paused", 200, 200)
+
+                let pause_btn = document.getElementById("pause-btn");
+                
+                //need to wait here until user clicks again and then ctx.restore();
+                ctx.restore();
+
+            };
+
+            //function to check win state
+            //if we win, we want to accumulate high score and draw a message to the canvas
+            //if we lose, we want to draw a losing message to the canvas
+            function checkWinState() {
+
+            };
+
+            //function to clear the board state and start a new game (no high score accumulation)
+            function startNewGame(resetScore) {
+                // location.reload(); 
+
+            };
+
+            //function to reset the board and continue playing (accumulate high score)
+            //should make sure we didn't lose before accumulating high score
+            function continuePlaying() {
+
+            };
+
+
+            //function to reset starting game info
+            function resetBoard(resetLives) {
+                //reset paddle position
+                //reset bricks               
+                //reset score and lives               
+            };
+
+            //draw the menu.
+            //we don't want to immediately draw... only when we click start game            
+            // draw();
+            drawMenu();
+
+        };//end window.onload function
+    </script>
+</head>
+
+<body>
+    <canvas id="myCanvas" width="480" height="320" hidden></canvas>
+    <div id="options-menu">
+        <button id="pause-btn">Pause</button>
+        <input type='range' min="1" max="10" id="speed-range">
+        <button id="reset-btn">Reset</button>
+        <button id="continue-btn">Continue Playing</button>
+    </div>
+    
+</body>
+
+</html>
